@@ -7,6 +7,9 @@ from diagrams.onprem.security import Vault
 from diagrams.onprem.storage import Ceph
 from diagrams.generic.network import Switch, Router
 import os
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+import threading
 
 # Components Mapping
 component_map = {
@@ -85,10 +88,42 @@ def generate_topology():
 
                         processed_connections.add(connection_tuple)
 
-    print("Topology updated!")
-    # os.system(f"start topology.png")  # Uncomment this line to open the diagram automatically
+    print("Topology updated")
+    # os.system(f"start topology.png")  # To open the diagram automatically
 
-# **Run in a loop for real-time updates**
-while True:
-    generate_topology()
-    time.sleep(5)  # Update every 5 seconds
+
+class TopologyChangeHandler(FileSystemEventHandler):
+    def __init__(self, generate_topology_function):
+        super().__init__()
+        self.generate_topology = generate_topology_function
+        self.timer = None
+        self.debounce_time = 1  # Wait 1 second after last modification before updating
+
+
+    def on_modified(self, event):
+        if event.src_path.endswith("cloud_topology.json"):
+            if self.timer:
+                self.timer.cancel()  # Cancel any existing timer
+
+            # Start a new timer that calls generate_topology() after 1 second
+            self.timer = threading.Timer(self.debounce_time, self.generate_topology)
+            self.timer.start()
+
+def watch_for_changes():
+    path = os.getcwd()  # Current directory
+    event_handler = TopologyChangeHandler(generate_topology)
+    observer = Observer()
+    observer.schedule(event_handler, path, recursive=False)
+    observer.start()
+    
+    print("Watching for changes in cloud_topology.json...")
+
+    try:
+        while True:
+            time.sleep(1)  # Keep the script running
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
+
+generate_topology()
+watch_for_changes()
