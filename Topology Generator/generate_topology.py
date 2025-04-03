@@ -41,55 +41,55 @@ def generate_topology():
         with Cluster("Compute Nodes"):
             for comp in data["components"]:
                 if comp["type"] == "KVM":
-                    components[comp["name"]] = Server(comp["name"])
+                    components[comp["id"]] = Server(comp["name"])
 
         with Cluster("Storage"):
             for comp in data["components"]:
                 if comp["type"] == "Ceph":
-                    components[comp["name"]] = Ceph(comp["name"])
+                    components[comp["id"]] = Ceph(comp["name"])
 
         with Cluster("Network"):
             for comp in data["components"]:
                 if comp["type"] in ["Switch", "Gateway"]:
-                    components[comp["name"]] = component_map[comp["type"]](comp["name"])
+                    components[comp["id"]] = component_map[comp["type"]](comp["name"])
 
         with Cluster("Security"):
             for comp in data["components"]:
                 if comp["type"] == "Firewall":
-                    components[comp["name"]] = Vault(comp["name"])
+                    components[comp["id"]] = Vault(comp["name"])
 
         with Cluster("Load Balancers"):
             for comp in data["components"]:
                 if comp["type"] == "HAProxy":
-                    components[comp["name"]] = Nginx(comp["name"])
+                    components[comp["id"]] = Nginx(comp["name"])
 
         # Track processed connections
         processed_connections = set()
 
         # Create directed connections
         for comp in data["components"]:
-            name = comp["name"]
+            id = comp["id"]
             health_status = comp.get("health", "unknown")
             edge_color = health_colour_map.get(health_status, "gray")
 
             for conn in comp["connected_to"]:
-                if conn in components and name in components:
-                    connection_tuple = tuple(sorted([name, conn]))
+                if conn in components and id in components:
+                    connection_tuple = tuple(sorted([id, conn]))
 
                     if connection_tuple not in processed_connections:
                         reverse_exists = any(
-                            c for c in data["components"] if c["name"] == conn and name in c["connected_to"]
+                            c for c in data["components"] if c["name"] == conn and id in c["connected_to"]
                         )
 
                         if reverse_exists:
-                            components[name] << Edge(color=edge_color) >> components[conn]
+                            components[id] << Edge(color=edge_color) >> components[conn]
                         else:
-                            components[name] >> Edge(color=edge_color) >> components[conn]
+                            components[id] >> Edge(color=edge_color) >> components[conn]
 
                         processed_connections.add(connection_tuple)
 
     print("Topology updated")
-    # os.system(f"start topology.png")  # To open the diagram automatically
+    #os.system(f"start topology.png")  # To open the diagram automatically
 
 
 class TopologyChangeHandler(FileSystemEventHandler):
