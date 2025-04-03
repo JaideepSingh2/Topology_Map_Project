@@ -1,0 +1,5 @@
+# Raghuram's virtual env (kindly do not touch)
+topo_env/
+
+# All images in the folder
+Topology Generator/*.png
