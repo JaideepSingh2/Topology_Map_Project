@@ -1,20 +1,26 @@
 import json
 import time
-from diagrams import Diagram, Cluster, Edge
-from diagrams.onprem.compute import Server
-from diagrams.onprem.network import Nginx
-from diagrams.onprem.security import Vault
-from diagrams.onprem.storage import Ceph
-from diagrams.generic.network import Switch, Router
 import os
+
+from diagrams import Diagram, Cluster, Edge
+from diagrams.onprem.network import Nginx
+from diagrams.generic.compute import Rack
+from diagrams.generic.storage import Storage
+from diagrams.generic.network import *
+# Firewall, Router, Subnet, Switch, VPN
+from diagrams.generic.network import Switch, Router
+
+# from diagrams.onprem.compute import Server
+# from diagrams.onprem.storage import Ceph
+# from diagrams.onprem.security import Vault
 
 # Components Mapping
 component_map = {
-    "KVM": Server,
-    "Ceph": Ceph,
+    "KVM": Rack,
+    "Ceph": Storage,
     "Switch": Switch,
     "HAProxy": Nginx,
-    "Firewall": Vault,
+    "Firewall": Firewall,
     "Gateway": Router
 }
 
@@ -38,12 +44,12 @@ def generate_topology():
         with Cluster("Compute Nodes"):
             for comp in data["components"]:
                 if comp["type"] == "KVM":
-                    components[comp["name"]] = Server(comp["name"])
+                    components[comp["name"]] = Rack(comp["name"])
 
         with Cluster("Storage"):
             for comp in data["components"]:
                 if comp["type"] == "Ceph":
-                    components[comp["name"]] = Ceph(comp["name"])
+                    components[comp["name"]] = Storage(comp["name"])
 
         with Cluster("Network"):
             for comp in data["components"]:
@@ -53,7 +59,7 @@ def generate_topology():
         with Cluster("Security"):
             for comp in data["components"]:
                 if comp["type"] == "Firewall":
-                    components[comp["name"]] = Vault(comp["name"])
+                    components[comp["name"]] = Firewall(comp["name"])
 
         with Cluster("Load Balancers"):
             for comp in data["components"]:
