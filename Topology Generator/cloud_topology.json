@@ -1,0 +1,47 @@
+{
+    "components": [
+      {
+        "name": "Compute-1",
+        "type": "KVM",
+        "health": "healthy",
+        "connected_to": ["Switch-1"]
+      },
+      {
+        "name": "Compute-2",
+        "type": "KVM",
+        "health": "degraded",
+        "connected_to": ["Switch-1"]
+      },
+      {
+        "name": "Switch-1",
+        "type": "Switch",
+        "health": "healthy",
+        "connected_to": ["Gateway-1", "Compute-1", "Compute-2"]
+      },
+      {
+        "name": "Gateway-1",
+        "type": "Gateway",
+        "health": "critical",
+        "connected_to": ["Firewall-1"]
+      },
+      {
+        "name": "Firewall-1",
+        "type": "Firewall",
+        "health": "healthy",
+        "connected_to": ["Gateway-1", "LoadBalancer-1"]
+      },
+      {
+        "name": "LoadBalancer-1",
+        "type": "HAProxy",
+        "health": "degraded",
+        "connected_to": ["Storage-1"]
+      },
+      {
+        "name": "Storage-1",
+        "type": "Ceph",
+        "health": "healthy",
+        "connected_to": []
+      }
+    ]
+  }
+  
