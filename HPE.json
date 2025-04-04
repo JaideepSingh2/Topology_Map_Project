@@ -1,0 +1,169 @@
+{
+  "timestamp": "2025-04-03T10:00:00Z",
+  "components": [
+      {
+          "id": "comp-1",
+          "name": "Compute-1",
+          "type": "KVM",
+          "role": "compute",
+          "health": "healthy",
+          "power_status": "on",
+          "cpu_utilization": "35%",
+          "connected_to": ["switch-1"],
+          "connection_type": "FC",
+          "metadata": {
+              "location": "datacenter-1",
+              "ip_address": "192.168.1.10"
+          }
+      },
+      {
+          "id": "comp-2",
+          "name": "Compute-2",
+          "type": "KVM",
+          "role": "compute",
+          "health": "degraded",
+          "power_status": "on",
+          "cpu_utilization": "75%",
+          "connected_to": ["switch-1"],
+          "connection_type": "IQZ",
+          "metadata": {
+              "location": "datacenter-1",
+              "ip_address": "192.168.1.11"
+          }
+      },
+      {
+          "id": "comp-3",
+          "name": "Compute-3",
+          "type": "KVM",
+          "role": "compute",
+          "health": "healthy",
+          "power_status": "on",
+          "cpu_utilization": "50%",
+          "connected_to": ["switch-2"],
+          "connection_type": "FC",
+          "metadata": {
+              "location": "datacenter-1",
+              "ip_address": "192.168.1.12"
+          }
+      },
+      {
+          "id": "comp-4",
+          "name": "Compute-4",
+          "type": "KVM",
+          "role": "compute",
+          "health": "critical",
+          "power_status": "off",
+          "cpu_utilization": "N/A",
+          "connected_to": ["switch-2"],
+          "connection_type": "IQZ",
+          "metadata": {
+              "location": "datacenter-1",
+              "ip_address": "192.168.1.13"
+          }
+      },
+      {
+          "id": "switch-1",
+          "name": "Switch-1",
+          "type": "Switch",
+          "role": "network",
+          "health": "healthy",
+          "power_status": "on",
+          "connected_to": ["gateway-1", "comp-1", "comp-2"],
+          "connection_type": "FC",
+          "metadata": {
+              "location": "datacenter-1"
+          }
+      },
+      {
+          "id": "switch-2",
+          "name": "Switch-2",
+          "type": "Switch",
+          "role": "network",
+          "health": "degraded",
+          "power_status": "on",
+          "connected_to": ["gateway-1", "comp-3", "comp-4"],
+          "connection_type": "IQZ",
+          "metadata": {
+              "location": "datacenter-1"
+          }
+      },
+      {
+          "id": "gateway-1",
+          "name": "Gateway-1",
+          "type": "Gateway",
+          "role": "network",
+          "health": "critical",
+          "power_status": "on",
+          "connected_to": ["firewall-1"],
+          "connection_type": "FC",
+          "metadata": {
+              "location": "datacenter-1"
+          }
+      },
+      {
+          "id": "firewall-1",
+          "name": "Firewall-1",
+          "type": "Firewall",
+          "role": "network",
+          "health": "healthy",
+          "power_status": "on",
+          "connected_to": ["gateway-1", "loadbalancer-1"],
+          "connection_type": "IQZ",
+          "metadata": {
+              "location": "datacenter-1"
+          }
+      },
+      {
+          "id": "loadbalancer-1",
+          "name": "LoadBalancer-1",
+          "type": "HAProxy",
+          "role": "network",
+          "health": "degraded",
+          "power_status": "on",
+          "connected_to": ["storage-1"],
+          "connection_type": "FC",
+          "metadata": {
+              "location": "datacenter-1"
+          }
+      },
+      {
+          "id": "storage-1",
+          "name": "Storage-1",
+          "type": "Ceph",
+          "role": "storage",
+          "health": "healthy",
+          "power_status": "on",
+          "connected_to": [],
+          "connection_type": "IQZ",
+          "metadata": {
+              "location": "datacenter-1"
+          }
+      },
+      {
+          "id": "storage-2",
+          "name": "Storage-2",
+          "type": "Ceph",
+          "role": "storage",
+          "health": "degraded",
+          "power_status": "on",
+          "connected_to": ["switch-2"],
+          "connection_type": "FC",
+          "metadata": {
+              "location": "datacenter-1"
+          }
+      },
+      {
+          "id": "backup-1",
+          "name": "Backup-1",
+          "type": "NAS",
+          "role": "backup",
+          "health": "healthy",
+          "power_status": "on",
+          "connected_to": ["switch-1"],
+          "connection_type": "IQZ",
+          "metadata": {
+              "location": "datacenter-1"
+          }
+      }
+  ]
+}
