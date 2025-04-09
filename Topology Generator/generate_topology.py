@@ -29,14 +29,17 @@ health_colour_map = {
     "unknown": "gray"
 }
 
+json_path = "HPE.json"
+
 def generate_topology():
-    with open("cloud_topology.json", "r") as file:
+    with open(json_path, "r") as file:
         data = json.load(file)
 
     components = {}
-    diagram_path = "topology"
+    diagram_path = "HPE_topology"
+    
 
-    with Diagram("Private Cloud Architecture", filename=diagram_path, show=False, direction="LR"):
+    with Diagram("Private Cloud Architecture", filename=diagram_path, show=False, direction="LR", graph_attr={"dpi": "300"}):
         # Create clusters
         with Cluster("Compute Nodes"):
             for comp in data["components"]:
@@ -78,7 +81,7 @@ def generate_topology():
 
                     if connection_tuple not in processed_connections:
                         reverse_exists = any(
-                            c for c in data["components"] if c["name"] == conn and id in c["connected_to"]
+                            c for c in data["components"] if c["id"] == conn and id in c["connected_to"]
                         )
 
                         if reverse_exists:
@@ -89,7 +92,7 @@ def generate_topology():
                         processed_connections.add(connection_tuple)
 
     print("Topology updated")
-    #os.system(f"start topology.png")  # To open the diagram automatically
+    os.system(f"start {diagram_path}.png")  # To open the diagram automatically
 
 
 class TopologyChangeHandler(FileSystemEventHandler):
@@ -101,7 +104,7 @@ class TopologyChangeHandler(FileSystemEventHandler):
 
 
     def on_modified(self, event):
-        if event.src_path.endswith("cloud_topology.json"):
+        if event.src_path.endswith(json_path):
             if self.timer:
                 self.timer.cancel()  # Cancel any existing timer
 
@@ -116,7 +119,7 @@ def watch_for_changes():
     observer.schedule(event_handler, path, recursive=False)
     observer.start()
     
-    print("Watching for changes in cloud_topology.json...")
+    print(f"Watching for changes in {json_path}...")
 
     try:
         while True:
