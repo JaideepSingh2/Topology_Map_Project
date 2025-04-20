@@ -1,170 +1,187 @@
 {
-    "timestamp": "2025-04-03T10:00:00Z",
-    "components": [
-      {
-        "id": "comp-1",
-        "name": "Compute-1",
-        "type": "KVM",
-        "role": "compute",
-        "health": "healthy",
-        "power_status": "on",
-        "cpu_utilization": "35%",
-        "connected_to": ["switch-1"],
-        "connection_type": "FC",
-        "metadata": {
-          "location": "datacenter-1",
-          "ip_address": "192.168.1.10"
+  "private_cloud": {
+    "id": "cloud-001",
+    "name": "SNUPRIVATE-DC",
+    "last_sync": "2 mins ago"
+  },
+  "servers": [
+    {
+      "id": "comp-1",
+      "name": "Compute-1",
+      "mac": "00:1A:11:FF:AA:01",
+      "type": "KVM",
+      "role": "compute",
+      "health": "healthy",
+      "power_status": "on",
+      "cpu_utilization": "35%",
+      "connected_switches": [
+        {
+          "switch_id": "switch-1",
+          "port": "1/1/2"
         }
-      },
-      {
-        "id": "comp-2",
-        "name": "Compute-2",
-        "type": "KVM",
-        "role": "compute",
-        "health": "degraded",
-        "power_status": "on",
-        "cpu_utilization": "75%",
-        "connected_to": ["switch-1"],
-        "connection_type": "iSCSI",
-        "metadata": {
-          "location": "datacenter-1",
-          "ip_address": "192.168.1.11"
-        }
-      },
-      {
-        "id": "comp-3",
-        "name": "Compute-3",
-        "type": "KVM",
-        "role": "compute",
-        "health": "healthy",
-        "power_status": "on",
-        "cpu_utilization": "50%",
-        "connected_to": ["switch-2"],
-        "connection_type": "FC",
-        "metadata": {
-          "location": "datacenter-1",
-          "ip_address": "192.168.1.12"
-        }
-      },
-      {
-        "id": "comp-4",
-        "name": "Compute-4",
-        "type": "KVM",
-        "role": "compute",
-        "health": "critical",
-        "power_status": "off",
-        "cpu_utilization": "N/A",
-        "connected_to": ["switch-2"],
-        "connection_type": "iSCSI",
-        "metadata": {
-          "location": "datacenter-1",
-          "ip_address": "192.168.1.13"
-        }
-      },
-      {
-        "id": "switch-1",
-        "name": "Switch-1",
-        "type": "Switch",
-        "role": "network",
-        "health": "healthy",
-        "power_status": "on",
-        "connected_to": ["gateway-1", "comp-1", "comp-2"],
-        "connection_type": "FC",
-        "metadata": {
-          "location": "datacenter-1"
-        }
-      },
-      {
-        "id": "switch-2",
-        "name": "Switch-2",
-        "type": "Switch",
-        "role": "network",
-        "health": "degraded",
-        "power_status": "on",
-        "connected_to": ["gateway-1", "comp-3", "comp-4"],
-        "connection_type": "iSCSI",
-        "metadata": {
-          "location": "datacenter-1"
-        }
-      },
-      {
-        "id": "gateway-1",
-        "name": "Gateway-1",
-        "type": "Gateway",
-        "role": "network",
-        "health": "critical",
-        "power_status": "on",
-        "connected_to": ["firewall-1"],
-        "connection_type": "FC",
-        "metadata": {
-          "location": "datacenter-1"
-        }
-      },
-      {
-        "id": "firewall-1",
-        "name": "Firewall-1",
-        "type": "Firewall",
-        "role": "network",
-        "health": "healthy",
-        "power_status": "on",
-        "connected_to": ["gateway-1", "loadbalancer-1"],
-        "connection_type": "iSCSI",
-        "metadata": {
-          "location": "datacenter-1"
-        }
-      },
-      {
-        "id": "loadbalancer-1",
-        "name": "LoadBalancer-1",
-        "type": "HAProxy",
-        "role": "network",
-        "health": "degraded",
-        "power_status": "on",
-        "connected_to": ["storage-1"],
-        "connection_type": "FC",
-        "metadata": {
-          "location": "datacenter-1"
-        }
-      },
-      {
-        "id": "storage-1",
-        "name": "Storage-1",
-        "type": "Ceph",
-        "role": "storage",
-        "health": "healthy",
-        "power_status": "on",
-        "connected_to": [],
-        "connection_type": "iSCSI",
-        "metadata": {
-          "location": "datacenter-1"
-        }
-      },
-      {
-        "id": "storage-2",
-        "name": "Storage-2",
-        "type": "Ceph",
-        "role": "storage",
-        "health": "degraded",
-        "power_status": "on",
-        "connected_to": ["switch-2"],
-        "connection_type": "FC",
-        "metadata": {
-          "location": "datacenter-1"
-        }
-      },
-      {
-        "id": "backup-1",
-        "name": "Backup-1",
-        "type": "NAS",
-        "role": "backup",
-        "health": "healthy",
-        "power_status": "on",
-        "connected_to": ["switch-1"],
-        "connection_type": "iSCSI",
-        "metadata": {
-          "location": "datacenter-1"
-        }
+      ],
+      "connection_type": "FC",
+      "metadata": {
+        "location": "datacenter-1",
+        "ip_address": "192.168.1.10"
       }
-    ]
-  }
-  
+    },
+    {
+      "id": "comp-2",
+      "name": "Compute-2",
+      "mac": "00:1A:11:FF:AA:02",
+      "type": "KVM",
+      "role": "compute",
+      "health": "degraded",
+      "power_status": "on",
+      "cpu_utilization": "75%",
+      "connected_switches": [
+        {
+          "switch_id": "switch-1",
+          "port": "1/1/3"
+        }
+      ],
+      "connection_type": "iSCSI",
+      "metadata": {
+        "location": "datacenter-1",
+        "ip_address": "192.168.1.11"
+      }
+    },
+    {
+      "id": "comp-3",
+      "name": "Compute-3",
+      "mac": "00:1A:11:FF:AA:03",
+      "type": "KVM",
+      "role": "compute",
+      "health": "healthy",
+      "power_status": "on",
+      "cpu_utilization": "50%",
+      "connected_switches": [
+        {
+          "switch_id": "switch-2",
+          "port": "1/1/4"
+        }
+      ],
+      "connection_type": "FC",
+      "metadata": {
+        "location": "datacenter-1",
+        "ip_address": "192.168.1.12"
+      }
+    },
+    {
+      "id": "comp-4",
+      "name": "Compute-4",
+      "mac": "00:1A:11:FF:AA:04",
+      "type": "KVM",
+      "role": "compute",
+      "health": "critical",
+      "power_status": "off",
+      "cpu_utilization": "N/A",
+      "connected_switches": [
+        {
+          "switch_id": "switch-2",
+          "port": "1/1/5"
+        }
+      ],
+      "connection_type": "iSCSI",
+      "metadata": {
+        "location": "datacenter-1",
+        "ip_address": "192.168.1.13"
+      }
+    }
+  ],
+  "network_switches": [
+    {
+      "id": "switch-1",
+      "name": "Switch-1",
+      "mac": "00:1A:11:FF:BB:01",
+      "switch_type": "8325",
+      "role": "network",
+      "health": "healthy",
+      "power_status": "on",
+      "connected_components": {
+        "1/1/2": "comp-1",
+        "1/1/3": "comp-2",
+        "1/1/10": "backup-1"
+      },
+      "connection_type": "FC",
+      "metadata": {
+        "location": "datacenter-1"
+      }
+    },
+    {
+      "id": "switch-2",
+      "name": "Switch-2",
+      "mac": "00:1A:11:FF:BB:02",
+      "switch_type": "8325",
+      "role": "network",
+      "health": "degraded",
+      "power_status": "on",
+      "connected_components": {
+        "1/1/4": "comp-3",
+        "1/1/5": "comp-4",
+        "1/1/12": "storage-2"
+      },
+      "connection_type": "iSCSI",
+      "metadata": {
+        "location": "datacenter-1"
+      }
+    }
+  ],
+  "storage": [
+    {
+      "id": "storage-1",
+      "name": "Storage-1",
+      "mac": "00:1A:11:FF:CC:01",
+      "type": "Ceph",
+      "role": "storage",
+      "health": "healthy",
+      "power_status": "on",
+      "connected_switches": [],
+      "connection_type": "iSCSI",
+      "metadata": {
+        "location": "datacenter-1"
+      }
+    },
+    {
+      "id": "storage-2",
+      "name": "Storage-2",
+      "mac": "00:1A:11:FF:CC:02",
+      "type": "Ceph",
+      "role": "storage",
+      "health": "degraded",
+      "power_status": "on",
+      "connected_switches": [
+        {
+          "switch_id": "switch-2",
+          "port": "1/1/12"
+        }
+      ],
+      "connection_type": "FC",
+      "metadata": {
+        "location": "datacenter-1"
+      }
+    }
+  ],
+  "backup": [
+    {
+      "id": "backup-1",
+      "name": "Backup-1",
+      "mac": "00:1A:11:FF:DD:01",
+      "type": "NAS",
+      "role": "backup",
+      "health": "healthy",
+      "power_status": "on",
+      "connected_switches": [
+        {
+          "switch_id": "switch-1",
+          "port": "1/1/10"
+        }
+      ],
+      "connection_type": "iSCSI",
+      "metadata": {
+        "location": "datacenter-1"
+      }
+    }
+  ]
+}
