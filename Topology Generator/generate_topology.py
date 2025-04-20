@@ -18,7 +18,8 @@ component_map = {
     "Switch": Switch,
     "HAProxy": Nginx,
     "Firewall": Vault,
-    "Gateway": Router
+    "Gateway": Router,
+    "NAS": Ceph  # Using Ceph icon for NAS
 }
 
 # Health Status Colour Mapping
@@ -35,60 +36,95 @@ def generate_topology():
     with open(json_path, "r") as file:
         data = json.load(file)
 
+    # Check if required sections exist
+    required_sections = ["private_cloud", "servers", "network_switches", "storage", "backup"]
+    for section in required_sections:
+        if section not in data:
+            print(f"Error: '{section}' section not found in {json_path}. Please check the JSON structure.")
+            return  # Exit the function if any required section is missing
+
     components = {}
     diagram_path = "HPE_topology"
     
-
-    with Diagram("Private Cloud Architecture", filename=diagram_path, show=False, direction="LR", graph_attr={"dpi": "300"}):
+    with Diagram(f"{data['private_cloud']['name']} Architecture", filename=diagram_path, show=False, direction="LR", graph_attr={"dpi": "300"}):
         # Create clusters
         with Cluster("Compute Nodes"):
-            for comp in data["components"]:
-                if comp["type"] == "KVM":
+            for comp in data["servers"]:
+                if "type" in comp and comp["type"] == "KVM":
                     components[comp["id"]] = Server(comp["name"])
 
         with Cluster("Storage"):
-            for comp in data["components"]:
-                if comp["type"] == "Ceph":
+            for comp in data["storage"]:
+                if "type" in comp and comp["type"] == "Ceph":
                     components[comp["id"]] = Ceph(comp["name"])
 
         with Cluster("Network"):
-            for comp in data["components"]:
-                if comp["type"] in ["Switch", "Gateway"]:
-                    components[comp["id"]] = component_map[comp["type"]](comp["name"])
+            for comp in data["network_switches"]:
+                components[comp["id"]] = Switch(comp["name"])
 
-        with Cluster("Security"):
-            for comp in data["components"]:
-                if comp["type"] == "Firewall":
-                    components[comp["id"]] = Vault(comp["name"])
-
-        with Cluster("Load Balancers"):
-            for comp in data["components"]:
-                if comp["type"] == "HAProxy":
-                    components[comp["id"]] = Nginx(comp["name"])
+        with Cluster("Backup"):
+            for comp in data["backup"]:
+                if "type" in comp and comp["type"] == "NAS":
+                    components[comp["id"]] = Ceph(comp["name"])
 
         # Track processed connections
         processed_connections = set()
 
-        # Create directed connections
-        for comp in data["components"]:
-            id = comp["id"]
-            health_status = comp.get("health", "unknown")
+        # Create connections from servers to switches
+        for server in data["servers"]:
+            server_id = server["id"]
+            health_status = server.get("health", "unknown")
             edge_color = health_colour_map.get(health_status, "gray")
+            connection_type = server.get("connection_type", "unknown")
 
-            for conn in comp["connected_to"]:
-                if conn in components and id in components:
-                    connection_tuple = tuple(sorted([id, conn]))
-
+            for conn in server.get("connected_switches", []):
+                switch_id = conn["switch_id"]
+                port = conn["port"]
+                
+                if switch_id in components and server_id in components:
+                    connection_tuple = tuple(sorted([server_id, switch_id]))
+                    
                     if connection_tuple not in processed_connections:
-                        reverse_exists = any(
-                            c for c in data["components"] if c["id"] == conn and id in c["connected_to"]
-                        )
+                        print(f"Creating connection from {server_id} to {switch_id} on port {port}")
+                        components[server_id] >> Edge(label=f"{connection_type} ({port})", color=edge_color) >> components[switch_id]
+                        processed_connections.add(connection_tuple)
 
-                        if reverse_exists:
-                            components[id] << Edge(color=edge_color) >> components[conn]
-                        else:
-                            components[id] >> Edge(color=edge_color) >> components[conn]
+        # Create connections from storage to switches
+        for storage in data["storage"]:
+            storage_id = storage["id"]
+            health_status = storage.get("health", "unknown")
+            edge_color = health_colour_map.get(health_status, "gray")
+            connection_type = storage.get("connection_type", "unknown")
 
+            for conn in storage.get("connected_switches", []):
+                switch_id = conn["switch_id"]
+                port = conn["port"]
+                
+                if switch_id in components and storage_id in components:
+                    connection_tuple = tuple(sorted([storage_id, switch_id]))
+                    
+                    if connection_tuple not in processed_connections:
+                        print(f"Creating connection from {storage_id} to {switch_id} on port {port}")
+                        components[storage_id] >> Edge(label=f"{connection_type} ({port})", color=edge_color) >> components[switch_id]
+                        processed_connections.add(connection_tuple)
+
+        # Create connections from backup to switches
+        for backup in data["backup"]:
+            backup_id = backup["id"]
+            health_status = backup.get("health", "unknown")
+            edge_color = health_colour_map.get(health_status, "gray")
+            connection_type = backup.get("connection_type", "unknown")
+
+            for conn in backup.get("connected_switches", []):
+                switch_id = conn["switch_id"]
+                port = conn["port"]
+                
+                if switch_id in components and backup_id in components:
+                    connection_tuple = tuple(sorted([backup_id, switch_id]))
+                    
+                    if connection_tuple not in processed_connections:
+                        print(f"Creating connection from {backup_id} to {switch_id} on port {port}")
+                        components[backup_id] >> Edge(label=f"{connection_type} ({port})", color=edge_color) >> components[switch_id]
                         processed_connections.add(connection_tuple)
 
     print("Topology updated")
@@ -101,7 +137,6 @@ class TopologyChangeHandler(FileSystemEventHandler):
         self.generate_topology = generate_topology_function
         self.timer = None
         self.debounce_time = 1  # Wait 1 second after last modification before updating
-
 
     def on_modified(self, event):
         if event.src_path.endswith(json_path):
