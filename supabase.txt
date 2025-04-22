@@ -1,0 +1,8 @@
+email_id:spam1742201@gmail.com
+password:Spam#123
+
+Project_Name: Topology
+Database_Pass: ngPMMrt4aNZgOVcG
+
+Project_URL: https://xpchztgrhfhgtcekazan.supabase.co
+API_key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwY2h6dGdyaGZoZ3RjZWthemFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNTY3MTUsImV4cCI6MjA2MDczMjcxNX0.VUKKlhtXgZdr2G4U-CGOjHH6TgugrPyg0cFzePzC4Q8
