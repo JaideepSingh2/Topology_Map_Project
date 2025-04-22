@@ -1,11 +1,18 @@
-import json
 import os
 import time
+import threading
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-import threading
 import plotly.graph_objects as go
 import plotly.io as pio
+from supabase import create_client
+
+# Supabase configuration
+SUPABASE_URL = "https://xpchztgrhfhgtcekazan.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwY2h6dGdyaGZoZ3RjZWthemFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNTY3MTUsImV4cCI6MjA2MDczMjcxNX0.VUKKlhtXgZdr2G4U-CGOjHH6TgugrPyg0cFzePzC4Q8"
+
+# Initialize Supabase client
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Health Status Colour Mapping
 health_colour_map = {
@@ -15,19 +22,113 @@ health_colour_map = {
     "unknown": "gray"
 }
 
-json_path = "HPE.json"
 output_path = "HPE_topology.html"
+check_interval = 30  # Check database for changes every 30 seconds
+
+def fetch_data_from_supabase():
+    """Fetch all required data from Supabase database"""
+    try:
+        # Fetch private cloud data
+        private_cloud_response = supabase.table('private_cloud').select('*').execute()
+        private_cloud = private_cloud_response.data[0] if private_cloud_response.data else {}
+        
+        # Fetch servers data
+        servers_response = supabase.table('servers').select('*').execute()
+        servers = servers_response.data
+
+        # Fetch network switches data
+        switches_response = supabase.table('network_switches').select('*').execute()
+        network_switches = switches_response.data
+        
+        # Fetch storage data
+        storage_response = supabase.table('storage').select('*').execute()
+        storage = storage_response.data
+        
+        # Fetch backup data
+        backup_response = supabase.table('backup').select('*').execute()
+        backup = backup_response.data
+
+        # Fetch connection data for servers
+        server_connections_response = supabase.table('server_connected_switches').select('*').execute()
+        server_connections = server_connections_response.data
+        
+        # Fetch connection data for storage
+        storage_connections_response = supabase.table('storage_connected_switches').select('*').execute()
+        storage_connections = storage_connections_response.data
+        
+        # Fetch connection data for backup
+        backup_connections_response = supabase.table('backup_connected_switches').select('*').execute()
+        backup_connections = backup_connections_response.data
+
+        # Fetch connection data for network switches
+        network_connections_response = supabase.table('network_connected_components').select('*').execute()
+        network_connections = network_connections_response.data
+
+        # Process the servers to add their connections
+        for server in servers:
+            server["connected_switches"] = []
+            for conn in server_connections:
+                if conn["server_id"] == server["id"]:
+                    server["connected_switches"].append({
+                        "switch_id": conn["switch_id"],
+                        "port": conn["port"]
+                    })
+        
+        # Process the storage to add their connections
+        for store in storage:
+            store["connected_switches"] = []
+            for conn in storage_connections:
+                if conn["storage_id"] == store["id"]:
+                    store["connected_switches"].append({
+                        "switch_id": conn["switch_id"],
+                        "port": conn["port"]
+                    })
+        
+        # Process the backup to add their connections
+        for bak in backup:
+            bak["connected_switches"] = []
+            for conn in backup_connections:
+                if conn["backup_id"] == bak["id"]:
+                    bak["connected_switches"].append({
+                        "switch_id": conn["switch_id"],
+                        "port": conn["port"]
+                    })
+        
+        # Process the network switches to add their connections
+        for switch in network_switches:
+            switch["connected_components"] = {}
+            for conn in network_connections:
+                if conn["switch_id"] == switch["id"]:
+                    switch["connected_components"][conn["port"]] = conn["component_id"]
+
+        # Build a data structure similar to the original JSON
+        data = {
+            "private_cloud": private_cloud,
+            "servers": servers,
+            "network_switches": network_switches,
+            "storage": storage,
+            "backup": backup
+        }
+        
+        return data
+    
+    except Exception as e:
+        print(f"Error fetching data from Supabase: {e}")
+        return None
 
 def generate_interactive_topology():
-    with open(json_path, "r") as file:
-        data = json.load(file)
+    print("Fetching data from Supabase...")
+    data = fetch_data_from_supabase()
+    
+    if not data:
+        print("Failed to fetch data from Supabase. Check connection or database structure.")
+        return
 
     # Check if required sections exist
     required_sections = ["private_cloud", "servers", "network_switches", "storage", "backup"]
     for section in required_sections:
-        if section not in data:
-            print(f"Error: '{section}' section not found in {json_path}. Please check the JSON structure.")
-            return  
+        if section not in data or not data[section]:
+            print(f"Warning: '{section}' section is empty or not found in database. Continuing anyway.")
 
     # Create a figure
     fig = go.Figure()
@@ -52,8 +153,8 @@ def generate_interactive_topology():
         Power: {server["power_status"]}<br>
         CPU: {server["cpu_utilization"]}<br>
         MAC: {server["mac"]}<br>
-        Location: {server["metadata"]["location"]}<br>
-        IP: {server["metadata"]["ip_address"]}
+        Location: {server["location"]}<br>
+        IP: {server["ip_address"]}
         """
         
         fig.add_trace(go.Scatter(
@@ -87,7 +188,7 @@ def generate_interactive_topology():
         Health: {storage["health"]}<br>
         Power: {storage["power_status"]}<br>
         MAC: {storage["mac"]}<br>
-        Location: {storage["metadata"]["location"]}
+        Location: {storage["location"]}
         """
         
         fig.add_trace(go.Scatter(
@@ -121,7 +222,7 @@ def generate_interactive_topology():
         Health: {switch["health"]}<br>
         Power: {switch["power_status"]}<br>
         MAC: {switch["mac"]}<br>
-        Location: {switch["metadata"]["location"]}
+        Location: {switch["location"]}
         """
         
         fig.add_trace(go.Scatter(
@@ -155,7 +256,7 @@ def generate_interactive_topology():
         Health: {backup["health"]}<br>
         Power: {backup["power_status"]}<br>
         MAC: {backup["mac"]}<br>
-        Location: {backup["metadata"]["location"]}
+        Location: {backup["location"]}
         """
         
         fig.add_trace(go.Scatter(
@@ -325,8 +426,9 @@ def generate_interactive_topology():
                 ))
     
     # Update layout
+    cloud_name = data['private_cloud'].get('name', 'Private Cloud') if data['private_cloud'] else 'Private Cloud'
     fig.update_layout(
-        title=f"{data['private_cloud']['name']} Architecture",
+        title=f"{cloud_name} Architecture",
         showlegend=True,
         legend=dict(
             yanchor="bottom",
@@ -352,45 +454,64 @@ def generate_interactive_topology():
     print(f"Interactive topology saved to {output_path}")
 
 
-class TopologyChangeHandler(FileSystemEventHandler):
-    def __init__(self, generate_topology_function):
-        super().__init__()
+class DatabaseMonitor:
+    def __init__(self, generate_topology_function, check_interval=30):
         self.generate_topology = generate_topology_function
-        self.timer = None
-        self.debounce_time = 1  # Wait 1 second after last modification before updating
-
-    def on_modified(self, event):
-        if event.src_path.endswith(json_path):
-            if self.timer:
-                self.timer.cancel() 
-
-            # Start a new timer that calls generate_topology() after 1 second
-            self.timer = threading.Timer(self.debounce_time, self.generate_topology)
-            self.timer.start()
-
-def watch_for_changes():
-    path = os.getcwd()  # Current directory
-    event_handler = TopologyChangeHandler(generate_interactive_topology)
-    observer = Observer()
-    observer.schedule(event_handler, path, recursive=False)
-    observer.start()
+        self.check_interval = check_interval
+        self.last_check_time = None
+        self.running = False
+        self.thread = None
     
-    print(f"Watching for changes in {json_path}...")
+    def start(self):
+        self.running = True
+        self.thread = threading.Thread(target=self._monitor_loop)
+        self.thread.daemon = True
+        self.thread.start()
+        print(f"Database monitoring started. Checking every {self.check_interval} seconds.")
+    
+    def _monitor_loop(self):
+        while self.running:
+            try:
+                # Get the database last update time
+                # This assumes you have a table called 'metadata' with a 'last_updated' field
+                # If not, you could add a check on any table's updated_at field
+                now = time.time()
+                if self.last_check_time is None or (now - self.last_check_time) >= self.check_interval:
+                    print("Checking for database changes...")
+                    self.last_check_time = now
+                    self.generate_topology()
+            except Exception as e:
+                print(f"Error monitoring database: {e}")
+            
+            time.sleep(self.check_interval)
+    
+    def stop(self):
+        self.running = False
+        if self.thread:
+            self.thread.join(timeout=1)
+        print("Database monitoring stopped.")
 
-    try:
-        while True:
-            time.sleep(1)  # Keep the script running
-    except KeyboardInterrupt:
-        observer.stop()
-    observer.join()
 
 # Install required packages if not already installed
 try:
     import plotly
+    from supabase import create_client
 except ImportError:
     print("Installing required packages...")
-    os.system("pip install plotly")
+    os.system("pip install plotly supabase")
     print("Packages installed successfully.")
 
+# Generate initial topology and start monitoring
+print("Generating initial topology...")
 generate_interactive_topology()
-watch_for_changes() 
+
+# Monitor database for changes
+db_monitor = DatabaseMonitor(generate_interactive_topology, check_interval)
+db_monitor.start()
+
+try:
+    while True:
+        time.sleep(1)  # Keep the script running
+except KeyboardInterrupt:
+    db_monitor.stop()
+    print("Program terminated by user")
