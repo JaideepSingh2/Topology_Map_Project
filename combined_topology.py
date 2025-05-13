@@ -190,92 +190,96 @@ def generate_interactive_topology(data):
     output_path = "HPE_topology.html"
     fig = go.Figure()
     node_positions = {}
-    
-    # Add nodes for each component type
-    for i, server in enumerate(data["servers"]):
-        x = 0.2
-        y = 0.8 - (i * 0.15)
-        node_positions[server["id"]] = (x, y)
-        hover_text = f"""
-<b>{server['name']}</b><br>ID: {server['id']}<br>Type: {server['type']}<br>Role: {server['role']}<br>Health: {server['health']}<br>Power: {server['power_status']}<br>CPU: {server.get('cpu_utilization', 'N/A')}<br>MAC: {server.get('mac', 'N/A')}<br>Location: {server.get('location', 'N/A')}<br>IP: {server.get('ip_address', 'N/A')}"""
-        
-        # Add the node with marker
+    images_to_add = []
+
+    left_x = 0.1
+    right_x = 0.9
+    y_step = 0.15
+
+    # Place all non-switch nodes on the left
+    left_nodes = data["servers"] + data["storage"] + data["backup"]
+    for i, node in enumerate(left_nodes):
+        y = 0.9 - i * y_step
+        node_positions[node["id"]] = (left_x, y)
+        if "cpu_utilization" in node:  # server
+            hover_text = f"""
+<b>{node['name']}</b><br>ID: {node['id']}<br>Type: {node['type']}<br>Role: {node['role']}<br>Health: {node['health']}<br>Power: {node['power_status']}<br>CPU: {node.get('cpu_utilization', 'N/A')}<br>MAC: {node.get('mac', 'N/A')}<br>Location: {node.get('location', 'N/A')}<br>IP: {node.get('ip_address', 'N/A')}"""
+            image_source = "images/Server.png"
+        elif node.get("type", "").lower() == "nas":
+            hover_text = f"""
+<b>{node['name']}</b><br>ID: {node['id']}<br>Type: {node['type']}<br>Role: {node['role']}<br>Health: {node['health']}<br>Power: {node.get('power_status', 'N/A')}<br>MAC: {node.get('mac', 'N/A')}<br>Location: {node.get('location', 'N/A')}"""
+            image_source = "images/Backup.png"
+        else:  # storage
+            hover_text = f"""
+<b>{node['name']}</b><br>ID: {node['id']}<br>Type: {node['type']}<br>Role: {node['role']}<br>Health: {node['health']}<br>Power: {node['power_status']}<br>MAC: {node.get('mac', 'N/A')}<br>Location: {node.get('location', 'N/A')}"""
+            image_source = "images/Storage.png"
         fig.add_trace(go.Scatter(
-            x=[x], y=[y], mode='markers+text', name=server["name"], text=[server["name"]],
+            x=[left_x], y=[y], mode='markers+text', name=node["name"], text=[node["name"]],
             textposition="bottom center",
-            marker=dict(
-                size=30,
-                symbol='square',
-                color=health_colour_map.get(server["health"], "gray")
-            ),
+            marker=dict(size=30, color='rgba(0,0,0,0)'),
             hovertext=hover_text,
             hoverinfo='text',
             showlegend=True
         ))
-        
-    for i, storage in enumerate(data["storage"]):
-        x = 0.2
-        y = 0.3 - (i * 0.15)
-        node_positions[storage["id"]] = (x, y)
-        hover_text = f"""
-<b>{storage['name']}</b><br>ID: {storage['id']}<br>Type: {storage['type']}<br>Role: {storage['role']}<br>Health: {storage['health']}<br>Power: {storage['power_status']}<br>MAC: {storage.get('mac', 'N/A')}<br>Location: {storage.get('location', 'N/A')}"""
-        
-        # Add the node with marker
-        fig.add_trace(go.Scatter(
-            x=[x], y=[y], mode='markers+text', name=storage["name"], text=[storage["name"]],
-            textposition="bottom center",
-            marker=dict(
-                size=30,
-                symbol='diamond',
-                color=health_colour_map.get(storage["health"], "gray")
-            ),
-            hovertext=hover_text,
-            hoverinfo='text',
-            showlegend=True
+        images_to_add.append(dict(
+            source=image_source,
+            xref="x", yref="y",
+            x=left_x, y=y+0.03,
+            sizex=0.06, sizey=0.06,
+            xanchor="center", yanchor="middle",
+            layer="above"
         ))
-        
+
+    # Place all switches on the right
     for i, switch in enumerate(data["network_switches"]):
-        x = 0.5
-        y = 0.6 - (i * 0.2)
-        node_positions[switch["id"]] = (x, y)
+        y = 0.9 - i * y_step
+        node_positions[switch["id"]] = (right_x, y)
         hover_text = f"""
 <b>{switch['name']}</b><br>ID: {switch['id']}<br>Type: {switch.get('switch_type', 'N/A')}<br>Role: {switch.get('role', 'N/A')}<br>Health: {switch['health']}<br>Power: {switch.get('power_status', 'N/A')}<br>MAC: {switch.get('mac', 'N/A')}<br>Location: {switch.get('location', 'N/A')}"""
-        
-        # Add the node with marker
         fig.add_trace(go.Scatter(
-            x=[x], y=[y], mode='markers+text', name=switch["name"], text=[switch["name"]],
+            x=[right_x], y=[y], mode='markers+text', name=switch["name"], text=[switch["name"]],
             textposition="bottom center",
-            marker=dict(
-                size=30,
-                symbol='circle',
-                color=health_colour_map.get(switch["health"], "gray")
-            ),
+            marker=dict(size=30, color='rgba(0,0,0,0)'),
             hovertext=hover_text,
             hoverinfo='text',
             showlegend=True
         ))
-        
-    for i, backup in enumerate(data["backup"]):
-        x = 0.2
-        y = 0.1 - (i * 0.15)
-        node_positions[backup["id"]] = (x, y)
-        hover_text = f"""
-<b>{backup['name']}</b><br>ID: {backup['id']}<br>Type: {backup['type']}<br>Role: {backup['role']}<br>Health: {backup['health']}<br>Power: {backup.get('power_status', 'N/A')}<br>MAC: {backup.get('mac', 'N/A')}<br>Location: {backup.get('location', 'N/A')}"""
-        
-        # Add the node with marker
-        fig.add_trace(go.Scatter(
-            x=[x], y=[y], mode='markers+text', name=backup["name"], text=[backup["name"]],
-            textposition="bottom center",
-            marker=dict(
-                size=30,
-                symbol='hexagon',
-                color=health_colour_map.get(backup["health"], "gray")
-            ),
-            hovertext=hover_text,
-            hoverinfo='text',
-            showlegend=True
+        images_to_add.append(dict(
+            source="images/Switch.png",
+            xref="x", yref="y",
+            x=right_x, y=y+0.03,
+            sizex=0.06, sizey=0.06,
+            xanchor="center", yanchor="middle",
+            layer="above"
         ))
-        
+
+    # Uncommenting this is adding Backup-1 again (need to look at it again)
+    # for i, backup in enumerate(data["backup"]):
+    #     x = 0.5  # Backup column (middle)
+    #     y = 0.9 - (i * 0.18)
+    #     node_positions[backup["id"]] = (x, y)
+    #     hover_text = f"""
+    # <b>{backup['name']}</b><br>ID: {backup['id']}<br>Type: {backup['type']}<br>Role: {backup['role']}<br>Health: {backup['health']}<br>Power: {backup.get('power_status', 'N/A')}<br>MAC: {backup.get('mac', 'N/A')}<br>Location: {backup.get('location', 'N/A')}"""
+    #     fig.add_trace(go.Scatter(
+    #         x=[x], y=[y], mode='markers+text', name=backup["name"], text=[backup["name"]],
+    #         textposition="bottom center",
+    #         marker=dict(
+    #             size=30,
+    #             color='rgba(0,0,0,0)'
+    #         ),
+    #         hovertext=hover_text,
+    #         hoverinfo='text',
+    #         showlegend=True
+    #     ))
+    #     images_to_add.append(dict(
+    #         source="images/Backup.png",
+    #         xref="x", yref="y",
+    #         x=x, y=y+0.03,
+    #         sizex=0.06, sizey=0.06,
+    #         xanchor="center", yanchor="middle",
+    #         layer="above"
+    #     ))
+
     # Add edges (connections)
     for server in data["servers"]:
         for conn in server.get("connected_switches", []):
@@ -292,7 +296,7 @@ def generate_interactive_topology(data):
                     hoverinfo='text',
                     showlegend=False
                 ))
-                
+
     for storage in data["storage"]:
         for conn in storage.get("connected_switches", []):
             switch_id = conn["switch_id"]
@@ -306,6 +310,7 @@ def generate_interactive_topology(data):
                     name=f"{storage['name']} → {switch_id}",
                     text=f"Port: {port}",
                     hoverinfo='text', showlegend=False))
+
     for backup in data["backup"]:
         for conn in backup.get("connected_switches", []):
             switch_id = conn["switch_id"]
@@ -319,11 +324,17 @@ def generate_interactive_topology(data):
                     name=f"{backup['name']} → {switch_id}",
                     text=f"Port: {port}",
                     hoverinfo='text', showlegend=False))
+
+    # Add all images to the layout
+    fig.update_layout(images=images_to_add)
+
     cloud_name = data['private_cloud'].get('name', 'Private Cloud') if data['private_cloud'] else 'Private Cloud'
     fig.update_layout(
         title=f"{cloud_name} Architecture",
-        showlegend=True,
-        legend=dict(yanchor="bottom", y=0.01, xanchor="right", x=0.99, bgcolor="rgba(255, 255, 255, 0.8)", bordercolor="black", borderwidth=1),
+        # showlegend=True,
+        # legend=dict(yanchor="bottom", y=0.01, xanchor="right", x=0.99, bgcolor="rgba(255, 255, 255, 0.8)", bordercolor="black", borderwidth=1),
+        
+        showlegend=False, 
         hovermode='closest',
         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
@@ -385,4 +396,4 @@ if __name__ == "__main__":
             time.sleep(1)
     except KeyboardInterrupt:
         db_monitor.stop()
-        logger.info("Program terminated by user.") 
+        logger.info("Program terminated by user.")
