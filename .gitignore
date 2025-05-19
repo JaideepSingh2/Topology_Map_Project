@@ -3,3 +3,7 @@ topo_env/
 
 # All images in the folder
 Topology Generator/*.png
+
+# All images & html files in here
+*.png
+*.html
