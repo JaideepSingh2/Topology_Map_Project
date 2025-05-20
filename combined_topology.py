@@ -154,22 +154,46 @@ def generate_png_topology(data):
                 health_status = item.get("health", "unknown")
                 edge_color = health_colour_map.get(health_status, "gray")
                 connection_type = item.get("connection_type", "unknown")
+                
+                # Check for critical health status and send detailed email alert
                 if health_status == "critical" and item_id not in alerted_components:
+                    ip_address = item.get("ip_address", "N/A")
+                    mac_address = item.get("mac", "N/A")
+                    location = item.get("location", "N/A")
+                    connected_switches = item.get("connected_switches", [])
+                    switch_details = "\n".join(
+                        [f"  - Switch ID: {conn['switch_id']}, Port: {conn['port']}" for conn in connected_switches]
+                    ) if connected_switches else "  - None"
+
                     detailed_body = f"""
 Critical Component Alert
-Time: {time.strftime('%Y-%m-%d %H:%M:%S')}
-Component: {item['name']} (ID: {item['id']})
-Type: {item.get('type', 'N/A')}
-Role: {item.get('role', 'N/A')}
-Health: CRITICAL
-Power: {item.get('power_status', 'N/A')}
-Location: {item.get('location', 'N/A')}
+
+Time of Detection: {time.strftime('%Y-%m-%d %H:%M:%S')}
+Private Cloud: {data['private_cloud'].get('name', 'Unknown')}
+Last Sync: {data['private_cloud'].get('last_sync', 'Unknown')}
+
+Component Details:
+- Name: {item['name']}
+- ID: {item['id']}
+- Type: {item.get('type', 'N/A')}
+- Role: {item.get('role', 'N/A')}
+- Health Status: CRITICAL
+- Power Status: {item.get('power_status', 'N/A')}
+- MAC Address: {mac_address}
+- IP Address: {ip_address}
+- Location: {location}
+- Connection Type: {connection_type}
+- Connected Switches:
+{switch_details}
+
+This is an automated alert from the Topology Monitoring System.
 """
                     send_email_alert_async(
                         subject=f"Critical Alert: {item['name']}",
                         body=detailed_body
                     )
                     alerted_components.add(item_id)
+                    
                 for conn in item.get("connected_switches", []):
                     switch_id = conn["switch_id"]
                     if switch_id in components and item_id in components:
@@ -206,14 +230,6 @@ def generate_interactive_topology(data):
             hover_text = f"""
 <b>{node['name']}</b><br>ID: {node['id']}<br>Type: {node['type']}<br>Role: {node['role']}<br>Health: {node['health']}<br>Power: {node.get('power_status', 'N/A')}<br>CPU: {node.get('cpu_utilization', 'N/A')}<br>MAC: {node.get('mac', 'N/A')}<br>Location: {node.get('location', 'N/A')}<br>IP: {node.get('ip_address', 'N/A')}"""
             image_source = "images/Server.png"
-#         elif node.get("type", "").lower() == "nas":
-#             hover_text = f"""
-# <b>{node['name']}</b><br>ID: {node['id']}<br>Type: {node['type']}<br>Role: {node['role']}<br>Health: {node['health']}<br>Power: {node.get('power_status', 'N/A')}<br>MAC: {node.get('mac', 'N/A')}<br>Location: {node.get('location', 'N/A')}"""
-#             image_source = "images/Backup.png"
-#         else:  # storage
-#             hover_text = f"""
-# <b>{node['name']}</b><br>ID: {node['id']}<br>Type: {node['type']}<br>Role: {node['role']}<br>Health: {node['health']}<br>Power: {node['power_status']}<br>MAC: {node.get('mac', 'N/A')}<br>Location: {node.get('location', 'N/A')}"""
-#             image_source = "images/Storage.png"
         fig.add_trace(go.Scatter(
             x=[left_x], y=[y], mode='markers+text', name=node["name"], text=[node["name"]],
             textposition="bottom center",
@@ -305,9 +321,7 @@ def generate_interactive_topology(data):
         ))
 
 
-
-
-    # Uncommenting this is adding Backup-1 again (need to look at it again)
+            # Uncommenting this is adding Backup-1 again (need to look at it again)
     # for i, backup in enumerate(data["backup"]):
     #     x = 0.5  # Backup column (middle)
     #     y = 0.9 - (i * 0.18)
@@ -333,6 +347,8 @@ def generate_interactive_topology(data):
     #         xanchor="center", yanchor="middle",
     #         layer="above"
     #     ))
+
+    # Add edges (connections)
 
     # Add edges (connections)
     for server in data["servers"]:
@@ -385,9 +401,6 @@ def generate_interactive_topology(data):
     cloud_name = data['private_cloud'].get('name', 'Private Cloud') if data['private_cloud'] else 'Private Cloud'
     fig.update_layout(
         title=f"{cloud_name} Architecture",
-        # showlegend=True,
-        # legend=dict(yanchor="bottom", y=0.01, xanchor="right", x=0.99, bgcolor="rgba(255, 255, 255, 0.8)", bordercolor="black", borderwidth=1),
-        
         showlegend=False, 
         hovermode='closest',
         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
