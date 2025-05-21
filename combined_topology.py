@@ -154,22 +154,46 @@ def generate_png_topology(data):
                 health_status = item.get("health", "unknown")
                 edge_color = health_colour_map.get(health_status, "gray")
                 connection_type = item.get("connection_type", "unknown")
+                
+                # Check for critical health status and send detailed email alert
                 if health_status == "critical" and item_id not in alerted_components:
+                    ip_address = item.get("ip_address", "N/A")
+                    mac_address = item.get("mac", "N/A")
+                    location = item.get("location", "N/A")
+                    connected_switches = item.get("connected_switches", [])
+                    switch_details = "\n".join(
+                        [f"  - Switch ID: {conn['switch_id']}, Port: {conn['port']}" for conn in connected_switches]
+                    ) if connected_switches else "  - None"
+
                     detailed_body = f"""
 Critical Component Alert
-Time: {time.strftime('%Y-%m-%d %H:%M:%S')}
-Component: {item['name']} (ID: {item['id']})
-Type: {item.get('type', 'N/A')}
-Role: {item.get('role', 'N/A')}
-Health: CRITICAL
-Power: {item.get('power_status', 'N/A')}
-Location: {item.get('location', 'N/A')}
+
+Time of Detection: {time.strftime('%Y-%m-%d %H:%M:%S')}
+Private Cloud: {data['private_cloud'].get('name', 'Unknown')}
+Last Sync: {data['private_cloud'].get('last_sync', 'Unknown')}
+
+Component Details:
+- Name: {item['name']}
+- ID: {item['id']}
+- Type: {item.get('type', 'N/A')}
+- Role: {item.get('role', 'N/A')}
+- Health Status: CRITICAL
+- Power Status: {item.get('power_status', 'N/A')}
+- MAC Address: {mac_address}
+- IP Address: {ip_address}
+- Location: {location}
+- Connection Type: {connection_type}
+- Connected Switches:
+{switch_details}
+
+This is an automated alert from the Topology Monitoring System.
 """
                     send_email_alert_async(
                         subject=f"Critical Alert: {item['name']}",
                         body=detailed_body
                     )
                     alerted_components.add(item_id)
+                    
                 for conn in item.get("connected_switches", []):
                     switch_id = conn["switch_id"]
                     if switch_id in components and item_id in components:
@@ -184,6 +208,7 @@ Location: {item.get('location', 'N/A')}
         process_connections(data["storage"], "storage")
         process_connections(data["backup"], "backup")
     logger.info("PNG topology diagram generated.")
+
 # --- Interactive HTML Topology Generation ---
 def generate_interactive_topology(data):
     output_path = "HPE_topology.html"
@@ -192,26 +217,19 @@ def generate_interactive_topology(data):
     images_to_add = []
 
     left_x = 0.1
+    middle_x = 0.5
     right_x = 0.9
     y_step = 0.15
 
-    # Place all non-switch nodes on the left
-    left_nodes = data["servers"] + data["storage"] + data["backup"]
+    # Servers on left
+    left_nodes = data["servers"]
     for i, node in enumerate(left_nodes):
         y = 0.9 - i * y_step
         node_positions[node["id"]] = (left_x, y)
         if "cpu_utilization" in node:  # server
             hover_text = f"""
-<b>{node['name']}</b><br>ID: {node['id']}<br>Type: {node['type']}<br>Role: {node['role']}<br>Health: {node['health']}<br>Power: {node['power_status']}<br>CPU: {node.get('cpu_utilization', 'N/A')}<br>MAC: {node.get('mac', 'N/A')}<br>Location: {node.get('location', 'N/A')}<br>IP: {node.get('ip_address', 'N/A')}"""
+<b>{node['name']}</b><br>ID: {node['id']}<br>Type: {node['type']}<br>Role: {node['role']}<br>Health: {node['health']}<br>Power: {node.get('power_status', 'N/A')}<br>CPU: {node.get('cpu_utilization', 'N/A')}<br>MAC: {node.get('mac', 'N/A')}<br>Location: {node.get('location', 'N/A')}<br>IP: {node.get('ip_address', 'N/A')}"""
             image_source = "images/Server.png"
-        elif node.get("type", "").lower() == "nas":
-            hover_text = f"""
-<b>{node['name']}</b><br>ID: {node['id']}<br>Type: {node['type']}<br>Role: {node['role']}<br>Health: {node['health']}<br>Power: {node.get('power_status', 'N/A')}<br>MAC: {node.get('mac', 'N/A')}<br>Location: {node.get('location', 'N/A')}"""
-            image_source = "images/Backup.png"
-        else:  # storage
-            hover_text = f"""
-<b>{node['name']}</b><br>ID: {node['id']}<br>Type: {node['type']}<br>Role: {node['role']}<br>Health: {node['health']}<br>Power: {node['power_status']}<br>MAC: {node.get('mac', 'N/A')}<br>Location: {node.get('location', 'N/A')}"""
-            image_source = "images/Storage.png"
         fig.add_trace(go.Scatter(
             x=[left_x], y=[y], mode='markers+text', name=node["name"], text=[node["name"]],
             textposition="bottom center",
@@ -229,14 +247,14 @@ def generate_interactive_topology(data):
             layer="above"
         ))
 
-    # Place all switches on the right
+    # Switches in the middle
     for i, switch in enumerate(data["network_switches"]):
         y = 0.9 - i * y_step
-        node_positions[switch["id"]] = (right_x, y)
+        node_positions[switch["id"]] = (middle_x, y)
         hover_text = f"""
 <b>{switch['name']}</b><br>ID: {switch['id']}<br>Type: {switch.get('switch_type', 'N/A')}<br>Role: {switch.get('role', 'N/A')}<br>Health: {switch['health']}<br>Power: {switch.get('power_status', 'N/A')}<br>MAC: {switch.get('mac', 'N/A')}<br>Location: {switch.get('location', 'N/A')}"""
         fig.add_trace(go.Scatter(
-            x=[right_x], y=[y], mode='markers+text', name=switch["name"], text=[switch["name"]],
+            x=[middle_x], y=[y], mode='markers+text', name=switch["name"], text=[switch["name"]],
             textposition="bottom center",
             marker=dict(size=30, color='rgba(0,0,0,0)'),
             hovertext=hover_text,
@@ -246,13 +264,64 @@ def generate_interactive_topology(data):
         images_to_add.append(dict(
             source="images/Switch.png",
             xref="x", yref="y",
+            x=middle_x, y=y+0.03,
+            sizex=0.06, sizey=0.06,
+            xanchor="center", yanchor="middle",
+            layer="above"
+        ))
+
+
+    # Storages on right top
+    for i, switch in enumerate(data["storage"]):
+        y = 0.9 - i * y_step
+        node_positions[switch["id"]] = (right_x, y)
+        hover_text = f"""
+<b>{switch['name']}</b><br>ID: {switch['id']}<br>Type: {switch['type']}<br>Role: {switch['role']}<br>Health: {switch['health']}<br>Power: {switch.get('power_status', 'N/A')}<br>MAC: {switch.get('mac', 'N/A')}<br>Location: {switch.get('location', 'N/A')}"""
+        image_source = "images/Storage.png"
+        fig.add_trace(go.Scatter(
+            x=[right_x], y=[y], mode='markers+text', name=switch["name"], text=[switch["name"]],
+            textposition="bottom center",
+            marker=dict(size=30, color='rgba(0,0,0,0)'),
+            hovertext=hover_text,
+            hoverinfo='text',
+            showlegend=False
+        ))
+        images_to_add.append(dict(
+            source=image_source,
+            xref="x", yref="y",
             x=right_x, y=y+0.03,
             sizex=0.06, sizey=0.06,
             xanchor="center", yanchor="middle",
             layer="above"
         ))
 
-    # Uncommenting this is adding Backup-1 again (need to look at it again)
+
+    # Backups on right bottom (below storage)
+    for i, switch in enumerate(data["backup"]):
+        y = 0.9 - (len(data["storage"]) + i) * y_step
+        node_positions[switch["id"]] = (right_x, y)
+        hover_text = f"""
+<b>{switch['name']}</b><br>ID: {switch['id']}<br>Type: {switch['type']}<br>Role: {switch['role']}<br>Health: {switch['health']}<br>Power: {switch.get('power_status', 'N/A')}<br>MAC: {switch.get('mac', 'N/A')}<br>Location: {switch.get('location', 'N/A')}"""
+        image_source = "images/Backup.png"
+        fig.add_trace(go.Scatter(
+            x=[right_x], y=[y], mode='markers+text', name=switch["name"], text=[switch["name"]],
+            textposition="bottom center",
+            marker=dict(size=30, color='rgba(0,0,0,0)'),
+            hovertext=hover_text,
+            hoverinfo='text',
+            showlegend=True
+        ))
+        images_to_add.append(dict(
+            source=image_source,
+            xref="x", yref="y",
+            x=right_x, y=y+0.03,
+            sizex=0.06, sizey=0.06,
+            xanchor="center", yanchor="middle",
+            layer="above"
+        ))
+
+
+            # Uncommenting this is adding Backup-1 again (need to look at it again)
     # for i, backup in enumerate(data["backup"]):
     #     x = 0.5  # Backup column (middle)
     #     y = 0.9 - (i * 0.18)
@@ -278,6 +347,8 @@ def generate_interactive_topology(data):
     #         xanchor="center", yanchor="middle",
     #         layer="above"
     #     ))
+
+    # Add edges (connections)
 
     # Add edges (connections)
     for server in data["servers"]:
@@ -330,9 +401,6 @@ def generate_interactive_topology(data):
     cloud_name = data['private_cloud'].get('name', 'Private Cloud') if data['private_cloud'] else 'Private Cloud'
     fig.update_layout(
         title=f"{cloud_name} Architecture",
-        # showlegend=True,
-        # legend=dict(yanchor="bottom", y=0.01, xanchor="right", x=0.99, bgcolor="rgba(255, 255, 255, 0.8)", bordercolor="black", borderwidth=1),
-        
         showlegend=False, 
         hovermode='closest',
         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
@@ -340,48 +408,20 @@ def generate_interactive_topology(data):
         margin=dict(l=20, r=20, t=40, b=20),
         plot_bgcolor='white', paper_bgcolor='white', width=1000, height=800
     )
-    # --- 4. Generate HTML with Auto-Refresh ---
-    refresh_interval_seconds = 10
-    meta_refresh_tag = f'<meta http-equiv="refresh" content="{refresh_interval_seconds}">'
-    html_content = pio.to_html(fig, full_html=True, include_plotlyjs='cdn')
-
-    if "<head>" in html_content:
-        html_content = html_content.replace("<head>", f"<head>\n    {meta_refresh_tag}", 1)
-    elif "<html>" in html_content:
-         html_content = html_content.replace("<html>", f"<html>\n<head>\n    {meta_refresh_tag}\n</head>", 1)
-    else: # Fallback
-        html_content = f"<html><head>{meta_refresh_tag}</head><body>{html_content}</body></html>"
-
-    try:
-        with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-        logger.info(f"Interactive topology saved to {output_path} with auto-refresh ({refresh_interval_seconds}s).")
-    except IOError as e:
-        logger.error(f"Failed to write HTML file {output_path}: {e}")
-        return None
-    return os.path.abspath(output_path)
+    pio.write_html(fig, file=output_path, auto_open=False)
+    logger.info(f"Interactive topology saved to {output_path}")
+    abs_path = os.path.abspath(output_path)
+    logger.info(f"Attempting to open {abs_path} in web browser...")
+    webbrowser.open_new_tab(f"file://{abs_path}")
 
 # --- Monitor and Update Both Outputs ---
-_interactive_browser_opened_once = False # Flag to track if browser was opened
-
 def update_all():
-    global _interactive_browser_opened_once
-    logger.info("Fetching data and regenerating outputs...")
     data = fetch_data_from_supabase()
     if not data:
-        logger.error("Could not fetch data from Supabase. Skipping output generation.")
+        logger.error("Could not fetch data from Supabase.")
         return
-
     generate_png_topology(data)
-    interactive_html_path = generate_interactive_topology(data)
-
-    if interactive_html_path and not _interactive_browser_opened_once:
-        try:
-            webbrowser.open(f"file://{interactive_html_path}", new=0, autoraise=True)
-            logger.info(f"Opened interactive topology in browser: file://{interactive_html_path}")
-            _interactive_browser_opened_once = True
-        except Exception as e:
-            logger.error(f"Could not open browser for interactive topology: {e}")
+    generate_interactive_topology(data)
 
 class DatabaseMonitor:
     def __init__(self, update_function, check_interval=30):
