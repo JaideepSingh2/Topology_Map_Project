@@ -2,6 +2,7 @@ import os
 import time
 import threading
 import logging
+import base64  # Added for base64 encoding
 from diagrams import Diagram, Cluster, Edge
 from diagrams.onprem.compute import Server
 from diagrams.onprem.network import Nginx
@@ -39,6 +40,35 @@ health_colour_map = {
 }
 
 alerted_components = set()
+
+# --- Utility Functions for Image Handling ---
+def get_default_image_data_uri():
+    """Return a simple default image as data URI if no image is found"""
+    # A simple gray box as fallback
+    return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAAGYktHRAD/AP8A/6C9p5MAAAAJcEhZcwAALiMAAC4jAXilP3YAAAAHdElNRQfnBQ4WNzd6B8JvAAABQ0lEQVRo3u2ZMU7DMBSGv1Q9QcUBygEYWdgZGFkg6tY7VOIOMAGdGZhYWCAxwgVgR0JIUHKADgwsVSwgQUhJ/Ow0wf2W2KrjfK+/5+c3VpAkyX+UDdYrwBOwC4yAe+DBGLNIbjiO433gRRn7SNJW7HpFePQlvEm6qHFuVtKbMjZLWq8TYA8YK+OxpKPKF9BY0LqfTWPMQZTxhccYk3vfZuLedGIjXCfCRoiJEBthJsL/b4Sp3wnOBUkfkqbAYZZlP8aYh5hFQx/gTNJlvh8CZ0AXuAGuYhVMcYDdEfAO3AC7wCmQ5XEa0SZICiHpy26HiW1yGKQcL0mW0ltRo6nHWknPpkLUDRBbChBvQUtVKBYhOkAtLYGoAE5aCuAk9TX6DGzl+y5wGrPYskcrU6Y34BK4A76BAfBojMniVksikWiML4YT3HO+95XBAAAAAElFTkSuQmCC"
+
+def encode_image_to_base64(image_path):
+    """Convert an image file to base64 for embedding in HTML"""
+    try:
+        if not os.path.exists(image_path):
+            logger.warning(f"Image not found: {image_path}, using default")
+            return get_default_image_data_uri()
+        
+        with open(image_path, "rb") as image_file:
+            encoded = base64.b64encode(image_file.read()).decode("utf-8")
+            return f"data:image/png;base64,{encoded}"
+    except Exception as e:
+        logger.error(f"Error encoding image {image_path}: {e}")
+        return get_default_image_data_uri()
+
+def ensure_images_directory():
+    """Make sure the images directory exists"""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    images_dir = os.path.join(script_dir, "images")
+    if not os.path.exists(images_dir):
+        logger.info(f"Creating images directory at {images_dir}")
+        os.makedirs(images_dir)
+    return images_dir
 
 # --- Data Fetching ---
 def fetch_table(table_name):
@@ -215,6 +245,15 @@ def generate_interactive_topology(data):
     fig = go.Figure()
     node_positions = {}
     images_to_add = []
+    
+    # Ensure images directory exists
+    images_dir = ensure_images_directory()
+
+    # Define image paths and convert to base64
+    server_image = encode_image_to_base64(os.path.join(images_dir, "Server.png"))
+    switch_image = encode_image_to_base64(os.path.join(images_dir, "Switch.png"))
+    storage_image = encode_image_to_base64(os.path.join(images_dir, "Storage.png"))
+    backup_image = encode_image_to_base64(os.path.join(images_dir, "Backup.png"))
 
     left_x = 0.1
     middle_x = 0.5
@@ -229,7 +268,6 @@ def generate_interactive_topology(data):
         if "cpu_utilization" in node:  # server
             hover_text = f"""
 <b>{node['name']}</b><br>ID: {node['id']}<br>Type: {node['type']}<br>Role: {node['role']}<br>Health: {node['health']}<br>Power: {node.get('power_status', 'N/A')}<br>CPU: {node.get('cpu_utilization', 'N/A')}<br>MAC: {node.get('mac', 'N/A')}<br>Location: {node.get('location', 'N/A')}<br>IP: {node.get('ip_address', 'N/A')}"""
-            image_source = "images/Server.png"
         fig.add_trace(go.Scatter(
             x=[left_x], y=[y], mode='markers+text', name=node["name"], text=[node["name"]],
             textposition="bottom center",
@@ -239,7 +277,7 @@ def generate_interactive_topology(data):
             showlegend=True
         ))
         images_to_add.append(dict(
-            source=image_source,
+            source=server_image,  # Using base64 encoded image
             xref="x", yref="y",
             x=left_x, y=y+0.03,
             sizex=0.06, sizey=0.06,
@@ -262,7 +300,7 @@ def generate_interactive_topology(data):
             showlegend=True
         ))
         images_to_add.append(dict(
-            source="images/Switch.png",
+            source=switch_image,  # Using base64 encoded image
             xref="x", yref="y",
             x=middle_x, y=y+0.03,
             sizex=0.06, sizey=0.06,
@@ -277,7 +315,6 @@ def generate_interactive_topology(data):
         node_positions[switch["id"]] = (right_x, y)
         hover_text = f"""
 <b>{switch['name']}</b><br>ID: {switch['id']}<br>Type: {switch['type']}<br>Role: {switch['role']}<br>Health: {switch['health']}<br>Power: {switch.get('power_status', 'N/A')}<br>MAC: {switch.get('mac', 'N/A')}<br>Location: {switch.get('location', 'N/A')}"""
-        image_source = "images/Storage.png"
         fig.add_trace(go.Scatter(
             x=[right_x], y=[y], mode='markers+text', name=switch["name"], text=[switch["name"]],
             textposition="bottom center",
@@ -287,7 +324,7 @@ def generate_interactive_topology(data):
             showlegend=False
         ))
         images_to_add.append(dict(
-            source=image_source,
+            source=storage_image,  # Using base64 encoded image
             xref="x", yref="y",
             x=right_x, y=y+0.03,
             sizex=0.06, sizey=0.06,
@@ -302,7 +339,6 @@ def generate_interactive_topology(data):
         node_positions[switch["id"]] = (right_x, y)
         hover_text = f"""
 <b>{switch['name']}</b><br>ID: {switch['id']}<br>Type: {switch['type']}<br>Role: {switch['role']}<br>Health: {switch['health']}<br>Power: {switch.get('power_status', 'N/A')}<br>MAC: {switch.get('mac', 'N/A')}<br>Location: {switch.get('location', 'N/A')}"""
-        image_source = "images/Backup.png"
         fig.add_trace(go.Scatter(
             x=[right_x], y=[y], mode='markers+text', name=switch["name"], text=[switch["name"]],
             textposition="bottom center",
@@ -312,7 +348,7 @@ def generate_interactive_topology(data):
             showlegend=True
         ))
         images_to_add.append(dict(
-            source=image_source,
+            source=backup_image,  # Using base64 encoded image
             xref="x", yref="y",
             x=right_x, y=y+0.03,
             sizex=0.06, sizey=0.06,
