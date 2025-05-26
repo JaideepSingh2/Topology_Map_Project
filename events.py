@@ -127,7 +127,7 @@ def main():
     """Main entry point"""
     logger.info("Starting random event generator...")
     try:
-        event_loop(interval=10)  # Generate events every 10 seconds
+        event_loop(interval=1)  # Generate events every 10 seconds
     except Exception as e:
         logger.error(f"Fatal error: {str(e)}")
 
