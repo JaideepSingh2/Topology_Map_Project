@@ -32,7 +32,7 @@ This project visualizes cloud architecture topologies with a modern, interactive
 3. Install dependencies:
    ```bash
    npm install
-4. Configure the backend URL in src/App.js .
+4. Configure the backend URL in src/App.js . (Can skip this step)
 5. Start the React frontend:
    ```bash
    npm start
