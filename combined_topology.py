@@ -28,8 +28,8 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 # Email configuration
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-EMAIL_ADDRESS = "dm409@snu.edu.in"
-APP_PASSWORD = "mdsrfmvmwjhdznkd"
+EMAIL_ADDRESS = "" #placeholder
+APP_PASSWORD = ""  #placeholder
 
 INTERVAL_TIME = 3
 
