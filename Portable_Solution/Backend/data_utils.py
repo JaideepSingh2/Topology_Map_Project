@@ -18,8 +18,8 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e
 
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
-EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "mushamvarun130@gmail.com")
-APP_PASSWORD = os.getenv("APP_PASSWORD", "fmzaopniafpdmdvu")
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "ENTER_MAIL_ID_HERE")
+APP_PASSWORD = os.getenv("APP_PASSWORD", "ENTER_APP_PASSWORD_HERE")
 
 HEALTH_COLOUR_MAP = {
     "healthy": "green",
