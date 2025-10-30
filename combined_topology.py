@@ -49,7 +49,7 @@ def get_default_image_data_uri():
     # A simple gray box as fallback
     return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAAGYktHRAD/AP8A/6C9p5MAAAAJcEhZcwAALiMAAC4jAXilP3YAAAAHdElNRQfnBQ4WNzd6B8JvAAABQ0lEQVRo3u2ZMU7DMBSGv1Q9QcUBygEYWdgZGFkg6tY7VOIOMAGdGZhYWCAxwgVgR0JIUHKADgwsVSwgQUhJ/Ow0wf2W2KrjfK+/5+c3VpAkyX+UDdYrwBOwC4yAe+DBGLNIbjiO433gRRn7SNJW7HpFePQlvEm6qHFuVtKbMjZLWq8TYA8YK+OxpKPKF9BY0LqfTWPMQZTxhccYk3vfZuLedGIjXCfCRoiJEBthJsL/b4Sp3wnOBUkfkqbAYZZlP8aYh5hFQx/gTNJlvh8CZ0AXuAGuYhVMcYDdEfAO3AC7wCmQ5XEa0SZICiHpy26HiW1yGKQcL0mW0ltRo6nHWknPpkLUDRBbChBvQUtVKBYhOkAtLYGoAE5aCuAk9TX6DGzl+y5wGrPYskcrU6Y34BK4A76BAfBojMniVksikWiML4YT3HO+95XBAAAAAElFTkSuQmCC"
 
-def encode_image_to_base64(image_path):
+ def encode_image_to_base64(image_path):
     """Convert an image file to base64 for embedding in HTML"""
     try:
         if not os.path.exists(image_path):
